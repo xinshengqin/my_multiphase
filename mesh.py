@@ -1,171 +1,130 @@
 #!/usr/bin/python
 import sys
 import matplotlib.pyplot as plt
-import numpy
+import numpy as np
 
-
-class mesh(object):
-    def __init__(self, xmin, xmax, n, ratio = None, xclusteredPoint = None,name = 'default_mesh'):
-        #The four input arguments are coordinates of left end point, coordinates of right end point,
-        #number of points and the ratio of maximum grid spacing to minimum grid spacing.
+class mesh_1d(object):
+    def __init__(self, xmin, xmax, delta1, deltan, name = 'default_mesh_1d'):
+    #The four input arguments are coordinates of start point, coordinates of end point,
+    #length of first cell and length of last cell
+    #required number of cells are automatically computed
+    #for uniform mesh (delta1==deltan), if (xmax-xmin)/delta1 != int
+    #then actual delta1 = delta1, while actual deltan != deltan
+    #The rule is delta1 is always guaranteed while deltan is not
         self.startPoint = float(xmin)
         self.endPoint = float(xmax)
         self.name = name
-        if type(n) != int:
-            print "The number of points is not an integer. Please modify the input."
-            sys.exit()
-        else:
-            self.numberOfPoints = n #not include 4 ghost cells
-        #Create uniform mesh
-        if ratio == None:
-            self.Nonuniform = False 
-            self.coordinates,self.gapSpaceDistribution = self.createUniformMesh()
-            self.minimumDeltaX=self.gapSpaceDistribution[0]
-        #Create nonuniform mesh
-        elif ratio != None and xclusteredPoint != None:
-            self.Nonuniform = True
-            self.ratio = float(ratio)
-            if xclusteredPoint < self.startPoint or xclusteredPoint > self.endPoint:
-                print "The specified clustered point is out of range. Please modify the input."
-                sys.exit()
-            else:
-                self.xclusteredPoint = float(xclusteredPoint)
-            self.n1 = int((self.xclusteredPoint-self.startPoint)/(self.endPoint-self.startPoint)*self.numberOfPoints) #Number of grid points to the left of
-            #cluster point
-            self.n2 = self.numberOfPoints - self.n1
-            self.nmax = max(self.n1,self.n2)
-            self.b = (2*self.nmax-3*self.ratio-1)/(self.ratio-1)
-            self.coordinates, self.gapSpaceDistribution, self.minimumDeltaX= self.createNonuniformMesh()
-        else:
-            print "Wrong input."
+        self.length=xmax-xmin
+        self.numberOfCells = self.get_n(delta1,deltan,self.length) #not include 4 ghost cells
+        self.delta1=delta1
+        self.deltan=deltan
+        self.min_delta = min(delta1,deltan)
+        #ratio between two adjacent cells, r = delta_{i+1} / delta_{i}  
+        self.r=self.get_r_given_delta1(delta1,self.length,self.numberOfCells)
+        self.edge=np.zeros(self.numberOfCells+1+4)#2 ghost cells at left and 2 at right
+        self.cell_length = np.zeros(self.numberOfCells+4)
+        for i in range(self.numberOfCells+4):
+            self.cell_length[i] = delta1*self.r**(i-2)
+        self.edge[2] = xmin
+        self.edge[1] = self.edge[2] - self.cell_length[1]
+        self.edge[0] = self.edge[1] - self.cell_length[0]
+        for i in range(self.edge.size-3):
+            self.edge[i+3] = self.edge[i+2]+self.cell_length[i+2]
+        self.center = np.zeros(self.edge.size)
+        self.center[1:] = (self.edge[:-1]+self.edge[1:])/2
+        self.center[0] = self.edge[0] - self.cell_length[0]/self.r/2
+        #print "self.edge: ",self.edge
+        #print "self.length: ",self.cell_length
+        #print "self.center: ", self.center
 
 
-    def createUniformMesh(self):
-        print "Creating uniform Mesh"
-        delta_x = (self.endPoint - self.startPoint)/(self.numberOfPoints-1)
-        list_of_point_coords = []
-        for i in range(self.numberOfPoints-1):
-            list_of_point_coords.append(self.startPoint + delta_x*i)
-        list_of_point_coords.append(self.endPoint)
-        #insert two ghost cell at the beginning
-        list_of_point_coords.insert(0,self.startPoint - delta_x)
-        list_of_point_coords.insert(0,self.startPoint - delta_x*2)
-        #insert two ghost cell at the end
-        list_of_point_coords.append(self.endPoint + delta_x)
-        list_of_point_coords.append(self.endPoint + delta_x*2)
+    def get_n(self,delta1,deltan,length,debug=0):
+        #given delta1 (size of 1st cell), deltan (size of last cell) and length of the domain
+        #giving it a guess of n can accelerate the computation
+        #return number of cells, n
+        #deltan may be slightly different from given value
+        if debug > 0:
+            print "call get_n()"
 
-        print "The list of point coords is: {}".format( list_of_point_coords )
-        gapSpaceDistribution = [] 
-        for i in range(self.numberOfPoints+3):
-            gapSpaceDistribution.append(delta_x)
-        print "The gap space distribution is: {}.".format(gapSpaceDistribution) 
-        print "Mesh generation complete."
-        return list_of_point_coords,gapSpaceDistribution
+        deltan = float(deltan)
+        delta1 = float(delta1)
+        length = float(length)
+        n = length*2/(delta1+deltan)#initial guess of n
+        r1 = deltan/delta1
+        if abs(deltan-delta1) < 1e-6:#deltan=delta1
+            return int(round(n))#round n into a integer
+        max_it = 100000
+        convergence_rule = 0.0000001
 
+        #newton-raphson iteration
+        #lhs = delta1*(1-r1**(n/(n-1)))/(1-r1**(1/(n-1)))
+        #solve for f =  a*(1-b^(x/(x-1)))/(1-b^(1/(x-1)))-L = 0
+        f =  delta1*(1-r1**(n/(n-1))) / (1-r1**(1/(n-1)))- length
+        from math import log
+        for i in range(max_it):
+            if debug > 0:
+                print "iteration: ",i
+                print "n:",n
+                print "residual:",f
+                print "\n"
+            if abs(f) < convergence_rule:
+                break
+            #f_prime got from wolfram alpha
+            f_prime = ( (delta1*  log(r1) )*(r1**(n/(n-1))-r1**(1/(n-1))) ) / ((n-1)**2 * (r1**(1/(n-1))-1)**2)
+            n = n - f/f_prime #new n
+            f =  delta1*(1-r1**(n/(n-1)))/(1-r1**(1/(n-1)))- length # new f
 
+        if debug > 0 :
+            print "total number of iteration for getting n:",i
+            print "residual:",abs(f)
+            print "n:",n
 
-    def createNonuniformMesh(self):
-        print "Creating nonuniform Mesh"
-        list_of_point_coords = []
-        for i in range(self.n1):
-            print "insert coordinate of point {} to the left of cluster point into list.".format(self.n1+1-i)
-            list_of_point_coords.append(self.polynomial_minus(self.n1+1-i))
-        for i in range(self.n2):
-            print "insert coordinate of point {} to the right of cluster point into list.".format(i+1)
-            list_of_point_coords.append(self.polynomial_plus(i+1))
-        print "The list of point coords before scaling is: {}".format( list_of_point_coords )
-        length_raw = list_of_point_coords[-1] - list_of_point_coords[0] 
-        length_target = self.endPoint - self.startPoint 
-        minimumDeltaX=(3+self.b)*length_target/length_raw
-        list_of_point_coords_0 = list_of_point_coords[0]
-        for i in range(len(list_of_point_coords)):
-            list_of_point_coords[i] = self.startPoint + ( list_of_point_coords[i] - list_of_point_coords_0) * length_target/length_raw
-        #insert two ghost cell at the beginning
-        deltaX1=list_of_point_coords[1]-list_of_point_coords[0]
-        list_of_point_coords.insert(0,self.startPoint-deltaX1)
-        list_of_point_coords.insert(0,self.startPoint-2*deltaX1)
-        #insert two ghost cell at the end
-        deltaX2=list_of_point_coords[-1]-list_of_point_coords[-2]
-        list_of_point_coords.append(self.endPoint+deltaX2)
-        list_of_point_coords.append(self.endPoint+2*deltaX2)
-        print "The list of point coords after scaling is: {}".format( list_of_point_coords )
-        gapSpaceDistribution = []
-        for i in range(self.numberOfPoints+3):
-            gapSpaceDistribution.append(list_of_point_coords[i+1]-list_of_point_coords[i])
-        print "The gap space distribution is: {}.".format(gapSpaceDistribution) 
-        print "Mesh generation complete."
-        return list_of_point_coords,gapSpaceDistribution,minimumDeltaX
-          
-    def polynomial(self,index):
-        return pow(index,2)+self.b*index
+        return int(round(n))#round n into a integer
 
-    def polynomial_plus(self,index):
-        return self.xclusteredPoint + ( self.polynomial(index) - self.polynomial(1) )
-        
-    def polynomial_minus(self,index):
-        return self.xclusteredPoint - ( self.polynomial(index) - self.polynomial(1) )
+    def get_r_given_delta1(self,delta1,length,n,debug=0):
+        #return ratio between two adjacent cells, r = delta_{i+1} / delta_{i}
+        #solve delta1*(1-r^n)/(1-r) = length to get r
+        if debug > 0 :
+            print "\n"*3
+            print "Given delta1, length of edge, number of cells along this edge"
+            print "call get_r_given_delta1"
 
-    def plot_pointVsIndex(self):
-        index = numpy.linspace(1,self.numberOfPoints+4,self.numberOfPoints+4)
+        delta1 = float(delta1)
+        length = float(length)
+        n = float(n)
+        max_it = 2000
+        convergence_rule = 0.0000001
+        r = (length/n/delta1)**(1/(n-1))#initial value for r
+        if abs(r - 1) < 1e-6:#uniform grid
+            if debug > 0 :
+                print "Warning! The inputs indicates a uniform grid!"
+            i=0
+        else:#nonuniform grid
+            #newton-raphson iteration
+            #solve for f(r) = (1-r^n)/(1-r) - L/delta1 = 0
+            f = (1-r**n)/(1-r) - length/delta1 #f0
+            for i in range(max_it):
+                if debug == 2:
+                    print "iteration:",i
+                    print "r=",r
+                    print "residual:",f
+                if abs(f) < convergence_rule:
+                    break
+                f_prime = ((n-1)*r**(n+1)-n*r**n+r)/((1-r)**2*r)
+                r = r - f/f_prime #new r
+                f = (1-r**n)/(1-r) - length/delta1 #new f
+            if i == max_it-1:
+                print "Warning!! Maximum iteration reached. Something was wrong!"
+        clusterRatio=r**(n-1)#ratio of size of last cell to first cell, delta_n/delta_1 
 
-        plt.figure()
-        plt.plot(index,self.coordinates,'ro')
-        plt.xlabel('index i')
-        plt.ylabel('point coordinate')
-        plt.savefig('./pointVsIndex_'+self.name+'_.png', bbox_inches='tight')
-        plt.close()
+        if debug > 0:
+            print "#"*80
+            print "result summary"
+            print "iteration times:", i
+            print "ratio between two adjacent cells, r = delta_{i+1} / delta_{i} = ", r
+            print "ratio of size of last cell to first cell, delta_n/delta_1 =",clusterRatio
+            print "total number of cells along this edge, n =",n
+            print "size of first cell:", delta1
+            print "size of last cell:", delta1*r**(n-1)
 
-    def plot_gapSpaceVsIndex(self):
-        index = numpy.linspace(1,self.numberOfPoints+3,self.numberOfPoints+3)
-
-        plt.figure()
-        plt.plot(index,self.gapSpaceDistribution,'ro')
-        plt.xlabel('index i')
-        plt.ylabel('gap space after between point i and i+1')
-        plt.savefig('./gapSpaceVsIndex_'+self.name+'_.png', bbox_inches='tight')
-        plt.close()
-
-    def plot_gapSpaceVsX(self):
-        x = self.coordinates
-        x.pop()#pop out last element
-
-        plt.figure()
-        plt.plot(x,self.gapSpaceDistribution,'ro')
-        plt.xlabel('point coordinate')
-        plt.ylabel('gap space between this point and next point')
-        plt.savefig('./gapSpaceVsX_'+self.name+'_.png', bbox_inches='tight')
-        plt.close()
-        
-
-    def printAllDataMembers(self):
-        print "startPoint: {}".format(self.startPoint)
-        print "endPoint: {}".format(self.endPoint)
-        print "number of Points: {}".format(self.numberOfPoints)
-        if self.Nonuniform == True:
-            print "ratio: {}".format(self.ratio)
-            print "coordinates of cluster point: {}".format(self.xclusteredPoint)
-            print "number of points to the left of cluster point: {}".format(self.n1)
-            print "number of points to the right of cluster point: {}".format(self.n2)
-            print "max of n1 and n2: {}".format(self.nmax)
-            print "parameter b for polynomial function: {}".format(self.b)
-
-###################################################
-#testing part
-#mesh(xmin, xmax, n, ratio = None, xclusteredPoint = None,name = 'default_mesh'):
-
-def test_uniformMesh():
-    mesh2 = mesh(-0.5,0.5,101)
-    mesh2.plot_pointVsIndex()
-    mesh2.plot_gapSpaceVsIndex()
-    print type(mesh2.coordinates)
-
-def test_nonuniformMesh():
-    mesh1 = mesh(0.2,2,20,3,0.2)
-    mesh1.plot_pointVsIndex()
-    mesh1.plot_gapSpaceVsIndex()
-
-#test_uniformMesh()
-test_nonuniformMesh()
-
-
-
+        return r
