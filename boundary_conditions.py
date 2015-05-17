@@ -17,3 +17,6 @@ def BC_fixedValue(mesh,scalar_list,value=0):
 
 def BC_fixedValue_1(mesh,scalar_list):
     return BC_fixedValue(mesh,scalar_list,1)
+
+def BC_empty(mesh,scalar_list):
+    return scalar_list

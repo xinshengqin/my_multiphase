@@ -177,6 +177,8 @@ class mesh_2d(object):
         self.center_x = center_raw[0]#x coordinates of centers of cells
         self.center_y = center_raw[1]#y coordinates of centers of cells
         
+        self.dx = x.min_delta
+        self.dy = y.min_delta
         self.min_delta = min(x.min_delta,y.min_delta)
         self.nx = x.numberOfCells+1#number of values in x direction, not including ghost cells
         self.ny = y.numberOfCells+1

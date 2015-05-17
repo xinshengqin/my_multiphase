@@ -20,8 +20,8 @@ class fields_2d(object):
         self.value = self.BC(self.mesh,self.value)#passed from outside of class
         #para is for additional parameters
 
-    def write(self):
-        file = open(self.name+'.csv','w')
+    def write_all(self,path='./'):
+        file = open(path+'/'+self.name+'.csv','w')
         file.write('#No.,vedge_x,vedge_y,hedge_x,hedge_y,center_x,center_y,'+self.name+'\n')
         vx=np.ravel(self.mesh.vedge_x)
         vy=np.ravel(self.mesh.vedge_y)
@@ -36,14 +36,16 @@ class fields_2d(object):
         for i,item in enumerate(xy):
             line = '{:>9s}'.format(str(i))+','+",".join(str(item).lstrip('[').rstrip(']').split())+'\n'
             file.write(line)
-    #def write(self):
-    #    file = open(self.name+'.csv','w')
-    #    file.write('#No.,value\n')
-    #    np.set_printoptions(formatter={'float': lambda x: format(x, '+9.6E')})
-    #    for i,item in enumerate(np.ravel(self.value)):
-    #        line = '{:>9s}'.format(str(i))+','+str(item)+'\n'
-    #        file.write(line)
         
+    def write(self,path='./'):
+        file = open(path+'/'+self.name+'.csv','w')
+        file.write(self.name+'\n')
+        value=np.ravel(self.value)
+        np.set_printoptions(formatter={'float': lambda x: format(x, '+9.6E')})
+        for i,item in enumerate(value):
+            #line = '{:>9s}'.format(str(i))+','+",".join(str(item).lstrip('[').rstrip(']').split())+'\n'
+            line = '{:>9s}'.format(str(i))+','+str(item)+'\n'
+            file.write(line)
     def __str__(self):
         summary = 'mesh size:' + str( np.shape(self.mesh) ) + '\n'
         summary = summary+ 'fields size:'+str( np.shape(self.value)) +'\n'

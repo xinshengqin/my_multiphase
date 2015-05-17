@@ -21,6 +21,6 @@ u = fields_2d(mesh3,BC_fixedValue_1)
 print u
 u.apply_BC()
 print u
-u.write()
+u.write('1.1')
 
 
