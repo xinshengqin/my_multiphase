@@ -2,15 +2,16 @@
 import sys
 import matplotlib.pyplot as plt
 import numpy as np
+import os
 
 class mesh_1d(object):
     def __init__(self, xmin, xmax, delta1, deltan, name = 'default_mesh_1d'):
-    #The four input arguments are coordinates of start point, coordinates of end point,
-    #length of first cell and length of last cell
-    #required number of cells are automatically computed
-    #for uniform mesh (delta1==deltan), if (xmax-xmin)/delta1 != int
-    #then actual delta1 = delta1, while actual deltan != deltan
-    #The rule is delta1 is always guaranteed while deltan is not
+        #The four input arguments are coordinates of start point, coordinates of end point,
+        #length of first cell and length of last cell
+        #required number of cells are automatically computed
+        #for uniform mesh (delta1==deltan), if (xmax-xmin)/delta1 != int
+        #then actual delta1 = delta1, while actual deltan != deltan
+        #The rule is delta1 is always guaranteed while deltan is not
         self.startPoint = float(xmin)
         self.endPoint = float(xmax)
         self.name = name
@@ -128,3 +129,62 @@ class mesh_1d(object):
             print "size of last cell:", delta1*r**(n-1)
 
         return r
+
+
+    def plot_edgeVsIndex(self):
+        index=np.arange(-2,self.numberOfCells+3,1)
+        plt.figure()
+        plt.plot(index,self.edge,'ro')
+        ax = plt.gca()
+        ax.grid(b=True, which='major', color='b', linestyle='-')
+        ax.grid(b=True, which='minor', color='r', linestyle='--')
+        plt.minorticks_on()
+        plt.xlabel('index i')
+        plt.ylabel('edge coordinate')
+        if not ('myplot' in os.listdir('./')):
+            os.mkdir('./myplot')
+        plt.savefig('./myplot/plot_edgeVsIndex_'+self.name+'.png', bbox_inches='tight')
+        plt.close()
+
+    def plot_centerVsIndex(self):
+        index=np.arange(-2,self.numberOfCells+3,1)
+        plt.figure()
+        plt.plot(index,self.center,'ro')
+        ax = plt.gca()
+        ax.grid(b=True, which='major', color='b', linestyle='-')
+        plt.minorticks_on()
+        ax.grid(b=True, which='minor', color='r', linestyle='--')
+        plt.xlabel('index i')
+        plt.ylabel('center coordinate')
+        if not ('myplot' in os.listdir('./')):
+            os.mkdir('./myplot')
+        plt.savefig('./myplot/plot_centerVsIndex_'+self.name+'.png', bbox_inches='tight')
+        plt.close()
+
+
+class mesh_2d(object):
+    def __init__(self,x,y):
+        #x,y should be two mesh_1d objects
+        vedge_raw = np.meshgrid(x.edge,y.center)
+        self.vedge_x = vedge_raw[0]#x coordinates of vertical edges 
+        self.vedge_y = vedge_raw[1]#y coordinates of vertical edges 
+
+        hedge_raw = np.meshgrid(x.center,y.edge)
+        self.hedge_x = hedge_raw[0] #x coordinates of horizontal edges
+        self.hedge_y = hedge_raw[1] #y coordinates of horizontal edges
+
+        center_raw =  np.meshgrid(x.center,y.center)
+        self.center_x = center_raw[0]#x coordinates of centers of cells
+        self.center_y = center_raw[1]#y coordinates of centers of cells
+        
+        self.min_delta = min(x.min_delta,y.min_delta)
+
+
+        #print "x coordinates of vertical edges: ",self.vedge_x
+        #print "y coordinates of vertical edges: ",self.vedge_y
+        #print "x coordinates of horizontal edges: ",self.hedge_x
+        #print "y coordinates of horizontal edges: ",self.hedge_y
+        #print "x coordinates of centers of cells: ",self.center_x
+        #print "y coordinates of centers of cells: ",self.center_y
+        
+
