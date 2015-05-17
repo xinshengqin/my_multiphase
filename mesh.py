@@ -163,7 +163,7 @@ class mesh_1d(object):
 
 
 class mesh_2d(object):
-    def __init__(self,x,y):
+    def __init__(self,x,y,name='default_mesh_2d'):
         #x,y should be two mesh_1d objects
         vedge_raw = np.meshgrid(x.edge,y.center)
         self.vedge_x = vedge_raw[0]#x coordinates of vertical edges 
@@ -178,6 +178,10 @@ class mesh_2d(object):
         self.center_y = center_raw[1]#y coordinates of centers of cells
         
         self.min_delta = min(x.min_delta,y.min_delta)
+        self.nx = x.numberOfCells+1#number of values in x direction, not including ghost cells
+        self.ny = y.numberOfCells+1
+        self.name = name
+
 
 
         #print "x coordinates of vertical edges: ",self.vedge_x
@@ -186,5 +190,24 @@ class mesh_2d(object):
         #print "y coordinates of horizontal edges: ",self.hedge_y
         #print "x coordinates of centers of cells: ",self.center_x
         #print "y coordinates of centers of cells: ",self.center_y
+    def write(self):
+        file = open(self.name+'.csv','w')
+        file.write('#No.,vedge_x,vedge_y,hedge_x,hedge_y,center_x,center_y\n')
+        vx=np.ravel(self.vedge_x)
+        vy=np.ravel(self.vedge_y)
+        hx=np.ravel(self.hedge_x)
+        hy=np.ravel(self.hedge_y)
+        cx=np.ravel(self.center_x)
+        cy=np.ravel(self.center_y)
+        xy=np.vstack((vx,vy,hx,hy,cx,cy))
+        xy=np.transpose(xy)
+        np.set_printoptions(formatter={'float': lambda x: format(x, '+9.6E')})
+        for i,item in enumerate(xy):
+            line = '{:>9s}'.format(str(i))+','+",".join(str(item).lstrip('[').rstrip(']').split())+'\n'
+            #line = str(i)
+            #for j,item2 in enumerate(item):
+            #    line = line+',{:16s}'.format(str(item2)) 
+            #line = line+'\n'
+            file.write(line)
         
 
