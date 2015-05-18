@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 
-class mesh_1d(object):
+class Mesh_1d(object):
     def __init__(self, xmin, xmax, delta1, deltan, name = 'default_mesh_1d'):
         #The four input arguments are coordinates of start point, coordinates of end point,
         #length of first cell and length of last cell
@@ -162,7 +162,7 @@ class mesh_1d(object):
         plt.close()
 
 
-class mesh_2d(object):
+class Mesh_2d(object):
     def __init__(self,x,y,name='default_mesh_2d'):
         #x,y should be two mesh_1d objects
         vedge_raw = np.meshgrid(x.edge,y.center)
