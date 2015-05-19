@@ -70,7 +70,9 @@ for n in range(max_iterations):
     u_star = u + (dt*(-1.*Ax+fbx+1./rho*(Dx)))
     v_star = v + (dt*(-1.*Ay+fby+1./rho*(Dy)))
 
-    #step 2: 
+    # Step 2: Solve projection poisson problem
+    u_star.applyBC()
+    v_star.applyBC()
 
 
     break

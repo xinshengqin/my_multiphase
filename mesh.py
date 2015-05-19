@@ -14,12 +14,12 @@ class Mesh_1d(object):
         #The rule is delta1 is always guaranteed while deltan is not
         self.startPoint = float(xmin)
         self.endPoint = float(xmax)
-        self.name = name
+        self.name = str(name)
         self.length=xmax-xmin
         self.numberOfCells = self.get_n(delta1,deltan,self.length) #not include 4 ghost cells
-        self.delta1=delta1
-        self.deltan=deltan
-        self.min_delta = min(delta1,deltan)
+        self.delta1=float(delta1)
+        self.deltan=float(deltan)
+        self.min_delta = min(self.delta1,self.deltan)
         #ratio between two adjacent cells, r = delta_{i+1} / delta_{i}  
         self.r=self.get_r_given_delta1(delta1,self.length,self.numberOfCells)
         #no. of ghost cells = 2
@@ -27,7 +27,7 @@ class Mesh_1d(object):
         self.cell_length = np.zeros(self.numberOfCells+2)
         for i in range(self.numberOfCells+2):
             self.cell_length[i] = delta1*self.r**(i-1)
-        self.edge[0] = xmin
+        self.edge[0] = float(xmin)
         #self.edge[1] = self.edge[2] - self.cell_length[1]
         #self.edge[0] = self.edge[1] - self.cell_length[0]
         for i in range(1,self.edge.size):

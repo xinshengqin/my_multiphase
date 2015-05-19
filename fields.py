@@ -92,6 +92,40 @@ class Fields_2d(object):
             pass #currently there is no corner type
         return self.corner
 
+    def ddx(self):#d(self)/dx
+        if self.ftype == 'vedge':
+            ddx = Fields_2d(self.mesh,ftype = 'center')
+            for i in range(1,self.mesh.nx+2):
+                ddx.value[:,i] = (self.value[:,i]-self.value[:,i-1])/(self.mesh.dx)
+            #print type(self.mesh.dx)
+        elif self.ftype == 'hedge':
+            pass#todo
+        elif self.ftype == 'center':
+            pass#todo
+        elif self.ftype == 'corner':
+            pass #todo
+        else:
+            print "Fields not recognized when conducting ddx operation on ",self.name,". EXIT"
+            sys.exit()
+        return ddx
+
+
+    def ddy(self):#d(self)/dx
+        if self.ftype == 'vedge':
+            pass#todo
+        elif self.ftype == 'hedge':
+            ddy = Fields_2d(self.mesh,ftype = 'center')
+            for j in range(1,self.mesh.ny+2):
+                ddy.value[j,:] = (self.value[j,:]-self.value[j-1,:])/(self.mesh.dy)
+        elif self.ftype == 'center':
+            pass#todo
+        elif self.ftype == 'corner':
+            pass #todo
+        else:
+            print "Fields not recognized when conducting ddy operation on ",self.name,". EXIT"
+            sys.exit()
+        return ddy
+
     def ddx2(self):#d2(self)/dx2
         ddx2 = Fields_2d(self.mesh,ftype = self.ftype)
         for i in range(1,self.mesh.nx+1):
@@ -110,7 +144,8 @@ class Fields_2d(object):
             print "cannot add two fields of different types up!"
             sys.exit()
         else:
-            result = Fields_2d(self.mesh,ftype=self.ftype)
+        #def Fields_2d(self,mesh_2d, BC =None, IC='default',ftype='center', name='default_fields'):
+            result = Fields_2d(self.mesh,self.BC,ftype=self.ftype)
             result.value = self.value + fields.value
             return result
 
@@ -119,7 +154,7 @@ class Fields_2d(object):
             print "multiply operation must be taken between floats and fields"
             sys.exit()
         else:
-            result = Fields_2d(self.mesh,ftype=self.ftype)
+            result = Fields_2d(self.mesh,self.BC,ftype=self.ftype)
             result.value = self.value * scalar
             return result
     def __rmul__(self,scalar):
@@ -127,7 +162,7 @@ class Fields_2d(object):
             print "multiply operation must be taken between floats and fields"
             sys.exit()
         else:
-            result = Fields_2d(self.mesh,ftype=self.ftype)
+            result = Fields_2d(self.mesh,self.BC,ftype=self.ftype)
             result.value = self.value * scalar
             return result
 
