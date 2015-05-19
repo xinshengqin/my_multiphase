@@ -7,12 +7,13 @@ from fields import Fields_2d
 class U(Fields_2d):
     def __init__(self,mesh_2d, BC = None, IC = 'default', name = 'U'):
         Fields_2d.__init__(self,mesh_2d,BC,IC, ftype = 'vedge',name = 'U')
+
     def uphi_x_vedge(self,phi):#\frac{\partial u*phi}{\partial x} on vertical edge
         #phi is prefered to be defined on vertical edge
         uphix = Fields_2d(self.mesh,ftype = 'vedge')
         self.compute_center()
         phi.compute_center()
-        for i in range(0,self.mesh.nx+3):
+        for i in range(0,self.mesh.nx+1):
             uphix.value[:,i] = 1./self.mesh.dx * (self.center[:,i+1]*phi.center[:,i+1]-self.center[:,i]*phi.center[:,i])
         return uphix
 
@@ -21,7 +22,7 @@ class U(Fields_2d):
         uphix = Fields_2d(self.mesh,ftype = 'hedge')
         self.compute_corner()
         phi.compute_corner()
-        for i in range(1,self.mesh.nx+4):
+        for i in range(1,self.mesh.nx+2):
             uphix.value[:,i] = 1./self.mesh.dx * (self.corner[:,i]*phi.corner[:,i]-self.corner[:,i-1]*phi.corner[:,i-1])
         return uphix
 
@@ -39,7 +40,7 @@ class V(Fields_2d):
         vphiy = Fields_2d(self.mesh,ftype='vedge')
         self.compute_corner()
         phi.compute_corner()
-        for j in range(1,self.mesh.ny+4):
+        for j in range(1,self.mesh.ny+2):
             vphiy.value[j,:] = 1./self.mesh.dy * (self.corner[j,:]*phi.corner[j,:]-self.corner[j-1,:]*phi.corner[j-1,:])
         return vphiy
 
@@ -48,7 +49,7 @@ class V(Fields_2d):
         vphiy = Fields_2d(self.mesh,ftype='hedge')
         self.compute_center()
         phi.compute_center()
-        for j in range(0,self.mesh.ny+3):
+        for j in range(0,self.mesh.ny+1):
             vphiy.value[j,:] = 1./self.mesh.dy * (self.center[j+1,:]*phi.center[j+1,:]-self.center[j,:]*phi.center[j,:])
         return vphiy
 

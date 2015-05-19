@@ -5,7 +5,7 @@ import numpy as np
 import os
 
 class Mesh_1d(object):
-    def __init__(self, xmin, xmax, delta1, deltan, name = 'default_mesh_1d',mx=1):
+    def __init__(self, xmin, xmax, delta1, deltan, name = 'default_mesh_1d'):
         #The four input arguments are coordinates of start point, coordinates of end point,
         #length of first cell and length of last cell
         #required number of cells are automatically computed
@@ -22,18 +22,19 @@ class Mesh_1d(object):
         self.min_delta = min(delta1,deltan)
         #ratio between two adjacent cells, r = delta_{i+1} / delta_{i}  
         self.r=self.get_r_given_delta1(delta1,self.length,self.numberOfCells)
-        self.edge=np.zeros(self.numberOfCells+1+4)#2 ghost cells at left and 2 at right
-        self.cell_length = np.zeros(self.numberOfCells+4)
-        for i in range(self.numberOfCells+4):
-            self.cell_length[i] = delta1*self.r**(i-2)
-        self.edge[2] = xmin
-        self.edge[1] = self.edge[2] - self.cell_length[1]
-        self.edge[0] = self.edge[1] - self.cell_length[0]
-        for i in range(self.edge.size-3):
-            self.edge[i+3] = self.edge[i+2]+self.cell_length[i+2]
+        #no. of ghost cells = 2
+        self.edge=np.zeros(self.numberOfCells+2)
+        self.cell_length = np.zeros(self.numberOfCells+2)
+        for i in range(self.numberOfCells+2):
+            self.cell_length[i] = delta1*self.r**(i-1)
+        self.edge[0] = xmin
+        #self.edge[1] = self.edge[2] - self.cell_length[1]
+        #self.edge[0] = self.edge[1] - self.cell_length[0]
+        for i in range(1,self.edge.size):
+            self.edge[i] = self.edge[i-1] + self.cell_length[i]
         self.center = np.zeros(self.edge.size)
         self.center[1:] = (self.edge[:-1]+self.edge[1:])/2
-        self.center[0] = self.edge[0] - self.cell_length[0]/self.r/2
+        self.center[0] = self.edge[0] - self.cell_length[0]/2
         #print "self.edge: ",self.edge
         #print "self.length: ",self.cell_length
         #print "self.center: ", self.center
@@ -132,7 +133,7 @@ class Mesh_1d(object):
 
 
     def plot_edgeVsIndex(self):
-        index=np.arange(-2,self.numberOfCells+3,1)
+        index=np.arange(0,self.numberOfCells+2,1)
         plt.figure()
         plt.plot(index,self.edge,'ro')
         ax = plt.gca()
@@ -147,7 +148,7 @@ class Mesh_1d(object):
         plt.close()
 
     def plot_centerVsIndex(self):
-        index=np.arange(-2,self.numberOfCells+3,1)
+        index=np.arange(0,self.numberOfCells+2,1)
         plt.figure()
         plt.plot(index,self.center,'ro')
         ax = plt.gca()
@@ -180,8 +181,8 @@ class Mesh_2d(object):
         self.dx = x.min_delta
         self.dy = y.min_delta
         self.min_delta = min(x.min_delta,y.min_delta)
-        self.nx = x.numberOfCells+1#number of values in x direction, not including ghost cells
-        self.ny = y.numberOfCells+1
+        self.nx = x.numberOfCells#number of values in x direction, not including ghost cells
+        self.ny = y.numberOfCells
         self.name = name
 
 

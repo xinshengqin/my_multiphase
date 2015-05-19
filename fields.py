@@ -2,7 +2,6 @@
 import numpy as np
 import sys
 import os
-from mesh import Mesh_1d,Mesh_2d
 
 class Fields_2d(object):
     def __init__(self,mesh_2d, BC =None, IC='default',ftype='center', name='default_fields'):
@@ -16,40 +15,45 @@ class Fields_2d(object):
         self.vedge= None
         self.hedge= None
         self.fdict = {'center':self.center,'corner':self.corner, 'vedge':self.vedge,'hedge':self.hedge}
+
+        #initialize
         if IC == 'default':#initialize velocity fields as zero
-            self.fdict[ftype] = np.zeros((self.mesh.ny+4,self.mesh.nx+4))
+            self.fdict[ftype] = np.zeros(self.mesh.center_x.shape)
         else:
             #todo IC should take more arguments
             self.fdict[ftype] = IC(self.mesh)#passed from outside of class
             #user defined IC function should return a numpy array
         self.value = self.fdict[self.ftype]
+        if self.value.shape != self.mesh.center_x.shape:
+            print "ERROR! The IC function return a field that does not match the size of mesh!"
+            sys.exit()
     def applyBC(self):
         self.fdict[self.ftype] = self.BC(self.mesh,self.value)#passed from outside of class
         self.value = self.fdict[self.ftype]
         #para is for additional parameters
 
     def compute_center(self):
-        self.center = np.zeros((self.mesh.ny+4,self.mesh.nx+4))
+        self.center = np.zeros(self.mesh.center_x.shape)
         if self.ftype == 'center':
             self.center = self.value
         elif self.ftype == 'hedge':
-            for j in range(1,self.mesh.ny+4):
+            for j in range(1,self.mesh.ny+2):
                 self.center[j,:] = (self.value[j,:]+self.value[j-1,:])/2.
         elif self.ftype == 'vedge':
-            for i in range(1,self.mesh.nx+4):
+            for i in range(1,self.mesh.nx+2):
                 self.center[:,i] = (self.value[:,i]+self.value[:,i-1])/2.
         elif self.ftype == 'corner':
             pass #currently there is no corner type
         return self.center
 
     def compute_vedge(self):
-        self.vedge = np.zeros((self.mesh.ny+4,self.mesh.nx+4))
+        self.vedge = np.zeros(self.mesh.center_x.shape)
         if self.ftype == 'center':
-            for i in range(0,self.mesh.nx+3):
+            for i in range(0,self.mesh.nx+1):
                 self.vedge[:,i] = (self.value[:,i+1]+self.value[:,i])/2.
         elif self.ftype == 'hedge':
-            for i in range(0,self.mesh.nx+3):
-                for j in range(1,self.mesh.ny+4):
+            for i in range(0,self.mesh.nx+1):
+                for j in range(1,self.mesh.ny+2):
                     self.vedge[j,i] = (self.value[j-1,i]+self.value[j-1,i+1]+self.value[j,i]+self.value[j,i+1])/4.
         elif self.ftype == 'vedge':
             self.vedge = self.value
@@ -58,31 +62,31 @@ class Fields_2d(object):
         return self.vedge
 
     def compute_hedge(self):
-        self.hedge = np.zeros((self.mesh.ny+4,self.mesh.nx+4))
+        self.hedge = np.zeros(self.mesh.center_x.shape)
         if self.ftype == 'center':
-            for j in range(0,self.mesh.ny+3):
+            for j in range(0,self.mesh.ny+1):
                 self.hedge[j,:] = (self.value[j,:]+self.value[j+1,:])/2.
         elif self.ftype == 'hedge':
             self.hedge = self.value
         elif self.ftype == 'vedge':
-            for i in range(1,self.mesh.nx+4):
-                for j in range(0,self.mesh.ny+3):
+            for i in range(1,self.mesh.nx+2):
+                for j in range(0,self.mesh.ny+1):
                     self.hedge[j,i] = (self.value[j,i]+self.value[j,i-1]+self.value[j+1,i]+self.value[j+1,i-1])/4.
         elif self.ftype == 'corner':
             pass #currently there is no corner type
         return self.hedge
 
     def compute_corner(self):
-        self.corner = np.zeros((self.mesh.ny+4,self.mesh.nx+4))
+        self.corner = np.zeros(self.mesh.center_x.shape)
         if self.ftype == 'center':
-            for j in range(0,self.mesh.ny+3):
-                for i in range(0,self.mesh.nx+3):
+            for j in range(0,self.mesh.ny+1):
+                for i in range(0,self.mesh.nx+1):
                     self.corner[j,i] = (self.value[j,i]+self.value[j,i+1]+self.value[j+1,i]+self.value[j+1,i+1])/4.
         elif self.ftype == 'hedge':
-            for i in range(0,self.mesh.nx+3):
+            for i in range(0,self.mesh.nx+1):
                 self.corner[:,i] = (self.value[:,i+1]+self.value[:,i])/2.
         elif self.ftype == 'vedge':
-            for j in range(0,self.mesh.ny+3):
+            for j in range(0,self.mesh.ny+1):
                 self.corner[j,:] = (self.value[j+1,:]+self.value[j,:])/2.
         elif self.ftype == 'corner':
             pass #currently there is no corner type
@@ -90,12 +94,12 @@ class Fields_2d(object):
 
     def ddx2(self):#d2(self)/dx2
         ddx2 = Fields_2d(self.mesh,ftype = self.ftype)
-        for i in range(1,self.mesh.nx+3):
+        for i in range(1,self.mesh.nx+1):
             ddx2.value[:,i] = (self.value[:,i+1]-2*self.value[:,i]+self.value[:,i-1])/(self.mesh.dx**2.)
         return ddx2
     def ddy2(self):#d2(self)/dy2
         ddy2 = Fields_2d(self.mesh,ftype = self.ftype)
-        for j in range(1,self.mesh.ny+3):
+        for j in range(1,self.mesh.ny+1):
             ddy2.value[j,:] = (self.value[j+1,:]-2*self.value[j,:]+self.value[j-1,:])/(self.mesh.dy**2.)
         return ddy2
     
@@ -156,6 +160,7 @@ class Fields_2d(object):
             #line = '{:>9s}'.format(str(i))+','+",".join(str(item).lstrip('[').rstrip(']').split())+'\n'
             line = '{:>9s}'.format(str(i))+','+str(item)+'\n'
             file.write(line)
+
     def __str__(self):
         summary = 'mesh size:' + str( np.shape(self.mesh) ) + '\n'
         summary = summary+ 'fields size:'+str( np.shape(self.value)) +'\n'
