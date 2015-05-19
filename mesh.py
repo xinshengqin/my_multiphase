@@ -5,7 +5,7 @@ import numpy as np
 import os
 
 class Mesh_1d(object):
-    def __init__(self, xmin, xmax, delta1, deltan, name = 'default_mesh_1d'):
+    def __init__(self, xmin, xmax, delta1, deltan, name = 'default_mesh_1d',mx=1):
         #The four input arguments are coordinates of start point, coordinates of end point,
         #length of first cell and length of last cell
         #required number of cells are automatically computed
