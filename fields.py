@@ -2,6 +2,7 @@
 import numpy as np
 import sys
 import os
+import copy
 
 class Fields_2d(object):
     def __init__(self,mesh_2d, BC =None, IC='default',ftype='center', name='default_fields'):
@@ -92,12 +93,11 @@ class Fields_2d(object):
             pass #currently there is no corner type
         return self.corner
 
-    def ddx(self):#d(self)/dx
+    def ddx_center(self):#d(self)/dx on CENTER!
+        ddx_center = Fields_2d(self.mesh,ftype = 'center')
         if self.ftype == 'vedge':
-            ddx = Fields_2d(self.mesh,ftype = 'center')
             for i in range(1,self.mesh.nx+2):
-                ddx.value[:,i] = (self.value[:,i]-self.value[:,i-1])/(self.mesh.dx)
-            #print type(self.mesh.dx)
+                ddx_center.value[:,i] = (self.value[:,i]-self.value[:,i-1])/(self.mesh.dx)
         elif self.ftype == 'hedge':
             pass#todo
         elif self.ftype == 'center':
@@ -107,14 +107,29 @@ class Fields_2d(object):
         else:
             print "Fields not recognized when conducting ddx operation on ",self.name,". EXIT"
             sys.exit()
+        return ddx_center
+
+    def ddx_vedge(self):#d(self)/dx on VERTICAL EDGE
+        ddx = Fields_2d(self.mesh,ftype = 'vedge')
+        if self.ftype == 'vedge':
+            pass #todo
+        elif self.ftype == 'hedge':
+            pass#todo
+        elif self.ftype == 'center':
+            for i in range(0,self.mesh.nx+1):
+                ddx.value[:,i] = (self.value[:,i+1]-self.value[:,i])/(self.mesh.dx)
+        elif self.ftype == 'corner':
+            pass #todo
+        else:
+            print "Fields not recognized when conducting ddx operation on ",self.name,". EXIT"
+            sys.exit()
         return ddx
 
-
-    def ddy(self):#d(self)/dx
+    def ddy_center(self):#d(self)/dx
+        ddy = Fields_2d(self.mesh,ftype = 'center')
         if self.ftype == 'vedge':
             pass#todo
         elif self.ftype == 'hedge':
-            ddy = Fields_2d(self.mesh,ftype = 'center')
             for j in range(1,self.mesh.ny+2):
                 ddy.value[j,:] = (self.value[j,:]-self.value[j-1,:])/(self.mesh.dy)
         elif self.ftype == 'center':
@@ -126,16 +141,44 @@ class Fields_2d(object):
             sys.exit()
         return ddy
 
-    def ddx2(self):#d2(self)/dx2
+    def ddy_hedge(self):#d(self)/dy on HORIZONTAL EDGE
+        ddy = Fields_2d(self.mesh,ftype = 'hedge')
+        if self.ftype == 'vedge':
+            pass #todo
+        elif self.ftype == 'hedge':
+            pass#todo
+        elif self.ftype == 'center':
+            for j in range(0,self.mesh.ny+1):
+                ddy.value[j,:] = (self.value[j+1,:]-self.value[j,:])/(self.mesh.dy)
+        elif self.ftype == 'corner':
+            pass #todo
+        else:
+            print "Fields not recognized when conducting ddx operation on ",self.name,". EXIT"
+            sys.exit()
+        return ddy
+
+    def ddx2(self):#d2(self)/dx2 on self.ftype
         ddx2 = Fields_2d(self.mesh,ftype = self.ftype)
         for i in range(1,self.mesh.nx+1):
             ddx2.value[:,i] = (self.value[:,i+1]-2*self.value[:,i]+self.value[:,i-1])/(self.mesh.dx**2.)
         return ddx2
-    def ddy2(self):#d2(self)/dy2
+    def ddy2(self):#d2(self)/dy2 on self.ftype
         ddy2 = Fields_2d(self.mesh,ftype = self.ftype)
         for j in range(1,self.mesh.ny+1):
             ddy2.value[j,:] = (self.value[j+1,:]-2*self.value[j,:]+self.value[j-1,:])/(self.mesh.dy**2.)
         return ddy2
+
+    def compute_residual(self,fields_2d):
+        if self.ftype != fields_2d.ftype:
+            print "cannot compute residual from two fields of different type!"
+            sys.exit()
+        residual  = 0
+        for i in range(self.mesh.nx+2):
+            for j in range(self.mesh.ny+2):
+                residual = max(residual, abs(self.value[j,i]-fields_2d.value[j,i]))
+        return residual
+
+
     
     def __add__(self,fields):
         #todo add a function to check if two fields can be added
@@ -145,16 +188,28 @@ class Fields_2d(object):
             sys.exit()
         else:
         #def Fields_2d(self,mesh_2d, BC =None, IC='default',ftype='center', name='default_fields'):
-            result = Fields_2d(self.mesh,self.BC,ftype=self.ftype)
+            result = copy.deepcopy(self)
             result.value = self.value + fields.value
             return result
 
+    def __sub__(self,fields):
+        #todo add a function to check if two fields can be added
+        if (self.ftype != fields.ftype): 
+            print "try to add up:",self.name,"and",fields.name
+            print "cannot add two fields of different types up!"
+            sys.exit()
+        else:
+        #def Fields_2d(self,mesh_2d, BC =None, IC='default',ftype='center', name='default_fields'):
+            result = copy.deepcopy(self)
+            result.value = self.value - fields.value
+            return result
     def __mul__(self,scalar):
         if type(scalar) != float:
             print "multiply operation must be taken between floats and fields"
             sys.exit()
         else:
-            result = Fields_2d(self.mesh,self.BC,ftype=self.ftype)
+            result = copy.deepcopy(self)
+            #result = Fields_2d(self.mesh,self.BC,ftype=self.ftype)
             result.value = self.value * scalar
             return result
     def __rmul__(self,scalar):
@@ -162,7 +217,7 @@ class Fields_2d(object):
             print "multiply operation must be taken between floats and fields"
             sys.exit()
         else:
-            result = Fields_2d(self.mesh,self.BC,ftype=self.ftype)
+            result = copy.deepcopy(self)
             result.value = self.value * scalar
             return result
 
@@ -188,7 +243,7 @@ class Fields_2d(object):
             if not( path in os.listdir('./')):
                 os.mkdir( path )
         file = open(path+'/'+self.name+'.csv','w')
-        file.write(self.name+'\n')
+        #file.write("#"+self.name+'\n')
         value=np.ravel(self.value)
         np.set_printoptions(formatter={'float': lambda x: format(x, '+9.6E')})
         for i,item in enumerate(value):
