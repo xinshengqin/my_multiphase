@@ -206,7 +206,7 @@ class Mesh_2d(object):
         xy=np.transpose(xy)
         np.set_printoptions(formatter={'float': lambda x: format(x, '+9.6E')})
         for i,item in enumerate(xy):
-            line = '{:>9s}'.format(str(i))+','+",".join(str(item).lstrip('[').rstrip(']').split())
+            line = '{:>9s}'.format(str(i))+','+",".join(str(item).lstrip('[').rstrip(']').split())+'\n'
             #line = str(i)
             #for j,item2 in enumerate(item):
             #    line = line+',{:16s}'.format(str(item2)) 

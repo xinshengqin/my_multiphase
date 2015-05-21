@@ -15,8 +15,8 @@ para['w'] = 1.6
 
 
 #create 2d mesh
-meshx = Mesh_1d(0.,10.,0.1,0.1,'mesh_x')
-meshy = Mesh_1d(0.,4,0.1,0.1,'mesh_y')
+meshx = Mesh_1d(0.,5.,0.1,0.1,'mesh_x')
+meshy = Mesh_1d(0.,4.,0.025,0.025,'mesh_y')
 meshx.plot_edgeVsIndex()
 meshx.plot_centerVsIndex()
 meshy.plot_edgeVsIndex()
@@ -30,18 +30,18 @@ CFL = 0.8
 u_inf = 1
 max_iterations = 10000
 u = U(mesh,BC_flatplate_u,IC_flatplate_u)
-v = V(mesh,BC_flatplate_u,IC_flatplate_v)
+v = V(mesh,BC_flatplate_v,IC_flatplate_v)
 p = Fields_2d(mesh,BC_p,IC_flatplate_p,name='p')
 fields_list = [u,v,p]
 
-output_interval=1 #Interval that u,v and p are write
+output_interval=20 #Interval that u,v and p are write
 tolerance = 0.001
 Re=100.0   #Reynolds number
 #nu=1e-6
 mu = 0.05
 rho=para['rho']
 t=0.0
-dt=CFL*meshx.min_delta/u_inf/Re
+dt=CFL*mesh.min_delta/u_inf/Re
 para['dt'] = dt
 
 #write all fields into time directory
@@ -51,10 +51,10 @@ for i,item in enumerate(fields_list):
 u_star = U(mesh)
 v_star = V(mesh)
 frame = 0
-residual = 0
 
 #main loop
 for n in range(max_iterations):
+    residual = 0
     print "iteration: ",n,"\n"
     t= t+dt
     frame = frame + 1
@@ -82,8 +82,8 @@ for n in range(max_iterations):
 
 
     # Step 3: Update velocities to end time
-    u = u_star - (dt/rho/mesh.dx)*p.ddx_vedge()
-    v = v_star - (dt/rho/mesh.dx)*p.ddy_hedge()
+    u = u_star - (dt/rho)*p.ddx_vedge()
+    v = v_star - (dt/rho)*p.ddy_hedge()
     # Step 4: Check convergence
     residual =  max(residual,u.compute_residual(u_old),v.compute_residual(v_old))
     print "residual = ",residual
