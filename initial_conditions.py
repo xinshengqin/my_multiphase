@@ -41,3 +41,30 @@ def IC_flatplate_v(mesh):
 def IC_flatplate_p(mesh):
     value = np.zeros(mesh.center_x.shape) 
     return value
+
+def IC_C_circle(mesh):
+    #initial condition for volume fraction C
+    #C is 1 in a circle centered at (5,5) with a radius of 4
+    value = np.zeros(mesh.center_x.shape) 
+    resolution = 20
+    xc = 5.
+    yc = 5.
+    radius = 4
+    for j in range(1,mesh.ny+1):
+        for i in range(1,mesh.nx+1):
+            area = 0.
+            x = np.linspace(mesh.vedge_x[j,i-1],mesh.vedge_x[j,i],resolution)
+            y = np.linspace(mesh.hedge_y[j-1,i],mesh.hedge_y[j,i],resolution)
+            x = x[1:-1]
+            y = y[1:-1]
+            #compute C in cell[j,i]
+            for k in range(x.size):
+                for l in range(y.size):
+                    if ( (x[k]-xc)**2+(y[l]-yc)**2 ) < radius**2:
+                        area = area+mesh.dx*mesh.dy/(x.size*y.size)
+            value[j,i] = area/(mesh.dx*mesh.dy)
+
+    return value
+
+
+

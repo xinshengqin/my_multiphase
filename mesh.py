@@ -183,6 +183,12 @@ class Mesh_2d(object):
         self.min_delta = min(x.min_delta,y.min_delta)
         self.nx = x.numberOfCells#number of values in x direction, not including ghost cells
         self.ny = y.numberOfCells
+        self.lx = x.length
+        self.ly = y.length
+        self.x0 = x.startPoint
+        self.xn = x.endPoint
+        self.y0 = y.startPoint
+        self.yn = y.endPoint
         self.name = name
 
 
