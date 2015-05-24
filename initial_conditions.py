@@ -42,13 +42,52 @@ def IC_flatplate_p(mesh):
     value = np.zeros(mesh.center_x.shape) 
     return value
 
-def IC_C_circle(mesh):
+def IC_circle_C(mesh,xc,yc,radius,resolution = 20):
     #initial condition for volume fraction C
     #C is 1 in a circle centered at (5,5) with a radius of 4
     value = np.zeros(mesh.center_x.shape) 
+    #resolution = 20
+    #xc = 5.
+    #yc = 5.
+    #radius = 4
+    for j in range(1,mesh.ny+1):
+        for i in range(1,mesh.nx+1):
+            area = 0.
+            x = np.linspace(mesh.vedge_x[j,i-1],mesh.vedge_x[j,i],resolution)
+            y = np.linspace(mesh.hedge_y[j-1,i],mesh.hedge_y[j,i],resolution)
+            x = x[1:-1]
+            y = y[1:-1]
+            #compute C in cell[j,i]
+            for k in range(x.size):
+                for l in range(y.size):
+                    if ( (x[k]-xc)**2+(y[l]-yc)**2 ) < radius**2:
+                        area = area+mesh.dx*mesh.dy/(x.size*y.size)
+            value[j,i] = area/(mesh.dx*mesh.dy)
+
+    return value
+def IC_translation_test(mesh):
+    return IC_circle_C(mesh,0.5,0.9,0.06875)
+def IC_simple_reconstruct_test(mesh):
+    return IC_circle_C(mesh,5.,5.,4)
+
+
+def IC_circle_u(mesh):
+    U_inf = 1.0
+    value = np.zeros(mesh.center_x.shape) + U_inf
+    return value
+
+def IC_circle_v(mesh):
+    V_inf = 1.0
+    value = np.zeros(mesh.center_x.shape) + V_inf
+    return value
+
+
+def IC_circle_C_t38(mesh):
+    #exact solution for comparison
+    value = np.zeros(mesh.center_x.shape) 
     resolution = 20
-    xc = 5.
-    yc = 5.
+    xc = 43.
+    yc = 43.
     radius = 4
     for j in range(1,mesh.ny+1):
         for i in range(1,mesh.nx+1):
@@ -66,5 +105,14 @@ def IC_C_circle(mesh):
 
     return value
 
+def IC_translation_test_u_1(mesh):
+    u = 0.4
+    return fixed_value(mesh,u)
 
+def IC_translation_test_v_1(mesh):
+    v = -0.6
+    return fixed_value(mesh,v)
 
+def fixed_value(mesh,value):
+    result = np.zeros(mesh.center_x.shape) + value 
+    return result

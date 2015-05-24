@@ -15,13 +15,13 @@ para['w'] = 1.6
 
 
 #create 2d mesh
-meshx = Mesh_1d(0.,5.,0.1,0.1,'mesh_x')
+meshx = Mesh_1d(0.,5.,0.1,0.1,'mesh_x')#create a 1d mesh, between x=0 and x=5 with a spacing of 0.1 in both end
 meshy = Mesh_1d(0.,4.,0.025,0.025,'mesh_y')
 meshx.plot_edgeVsIndex()
 meshx.plot_centerVsIndex()
 meshy.plot_edgeVsIndex()
 meshy.plot_centerVsIndex()
-mesh = Mesh_2d(meshx,meshy,'mesh')
+mesh = Mesh_2d(meshx,meshy,'mesh')#create a 2d mesh from two 1d meshes created above
 print "Mesh created.\n"
 print "Mesh size: (",mesh.nx,', ',mesh.ny,")"
 mesh.write()
@@ -29,9 +29,9 @@ mesh.write()
 CFL = 0.8
 u_inf = 1
 max_iterations = 10000
-u = U(mesh,BC_flatplate_u,IC_flatplate_u)
-v = V(mesh,BC_flatplate_v,IC_flatplate_v)
-p = Fields_2d(mesh,BC_p,IC_flatplate_p,name='p')
+u = U(mesh,BC_flatplate_u,IC_flatplate_u)#create a velocity field u
+v = V(mesh,BC_flatplate_v,IC_flatplate_v)#create a velocity field v
+p = Fields_2d(mesh,BC_p,IC_flatplate_p,name='p')#create pressure field
 fields_list = [u,v,p]
 
 output_interval=20 #Interval that u,v and p are write
@@ -65,11 +65,11 @@ for n in range(max_iterations):
         item.applyBC()
 
     # Step 1: Update velocity to intermediate step
-    Ax = u.uphi_x_vedge(u)+v.vphi_y_vedge(u)
-    Dx = mu*(u.ddx2()+u.ddy2())
+    Ax = u.uphi_x_vedge(u)+v.vphi_y_vedge(u)#advective term
+    Dx = mu*(u.ddx2()+u.ddy2())#diffusive term
     Ay = u.uphi_x_hedge(v)+v.vphi_y_hedge(v)
     Dy = mu*(v.ddx2()+v.ddy2())
-    fbx = Fields_2d(mesh,ftype='vedge')#currently its zero
+    fbx = Fields_2d(mesh,ftype='vedge')#body force, currently its zero
     fby = Fields_2d(mesh,ftype='hedge')#currently its zero
             
     u_star = u + (dt*(-1.*Ax+fbx+1./rho*(Dx)))
