@@ -29,7 +29,7 @@ mesh.write()
 CFL = 0.8
 u_inf = 1
 max_iterations = 10000
-u = U(mesh,BC_flatplate_u,IC_flatplate_u)#create a velocity field u
+u = U(mesh,BC_flatplate_u,IC_flatplate_u)#create a velocity field u with specified B.C. and I.C. passed in
 v = V(mesh,BC_flatplate_v,IC_flatplate_v)#create a velocity field v
 p = Fields_2d(mesh,BC_p,IC_flatplate_p,name='p')#create pressure field
 fields_list = [u,v,p]
@@ -62,11 +62,11 @@ for n in range(max_iterations):
     u_old = u
     v_old = v
     for i,item in enumerate(fields_list):
-        item.applyBC()
+        item.applyBC()#apply boundary conditions for each fields variable
 
     # Step 1: Update velocity to intermediate step
-    Ax = u.uphi_x_vedge(u)+v.vphi_y_vedge(u)#advective term
-    Dx = mu*(u.ddx2()+u.ddy2())#diffusive term
+    Ax = u.uphi_x_vedge(u)+v.vphi_y_vedge(u)#advective term in x direction
+    Dx = mu*(u.ddx2()+u.ddy2())#diffusive term in x direction
     Ay = u.uphi_x_hedge(v)+v.vphi_y_hedge(v)
     Dy = mu*(v.ddx2()+v.ddy2())
     fbx = Fields_2d(mesh,ftype='vedge')#body force, currently its zero
@@ -78,7 +78,7 @@ for n in range(max_iterations):
     # Step 2: Solve projection poisson problem
     u_star.applyBC()
     v_star.applyBC()
-    [status,p]=solve_poisson(mesh,u_star,v_star,p,para)
+    [status,p]=solve_poisson(mesh,u_star,v_star,p,para) # solve for pressure
 
 
     # Step 3: Update velocities to end time
