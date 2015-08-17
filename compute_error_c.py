@@ -2,15 +2,14 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-import math
-import csv
-import os,sys
+import sys
+import os
 
 
-filename = '2.0'
-path='2.0'
-Nx=80
-Ny=80
+filename = 'final'
+path='6.0'
+Nx=40
+Ny=40
 
 Lx=1.
 Ly=1.
@@ -24,9 +23,6 @@ dy = Ly/Ny
 #v=np.zeros(Ny,Nx)
 #p=np.zeros(Ny,Nx)
 u=[]
-#v=[]
-#p=[]
-row=1
 with open(path+'/c.csv','r') as inputfile:
     for line in inputfile:
         if line.startswith('#'):
@@ -35,9 +31,27 @@ with open(path+'/c.csv','r') as inputfile:
         u.append(line[1])
 
 u=np.array(u)
-
-u=u.reshape(Ny+2,Nx+2)#include ghost cells
 u=u.astype(np.float)
+
+
+c_exact=[]
+with open('0.0/c.csv','r') as inputfile:
+    for line in inputfile:
+        if line.startswith('#'):
+            continue
+        line=line.strip(' ').strip('\n').split(',')
+        c_exact.append(line[1])
+
+c_exact=np.array(c_exact)
+c_exact=c_exact.astype(np.float)
+
+error = 0
+for i in range(u.size):
+    error = error+dx*dy*abs(u[i]-c_exact[i])
+print 'error: ',error
+
+delta = u-c_exact
+delta=delta.reshape(Ny+2,Nx+2)#include ghost cells
 
 x=np.linspace(0,Lx+dx,Nx+2)
 y=np.linspace(0,Ly+dy,Ny+2)
@@ -61,7 +75,7 @@ ax = fig.add_subplot(111)
 #levels = np.linspace(-0.1, 1.2, 40)
 #levels = np.linspace(-0.1, 1.2, 40)
 #cs = plt.contourf(X, Y, p, levels=levels)
-cs = plt.contourf(X, Y, u,50,cmap=plt.cm.get_cmap('jet'))#50 specifys how many levels of colors is there in the plot
+cs = plt.contourf(X, Y, delta,50,cmap=plt.cm.get_cmap('jet'))#50 specifys how many levels of colors is there in the plot
 #cs2 = plt.contour(cs, levels=cs.levels[::4], colors = 'k', origin='upper', hold='on')
 #fig.colorbar(cs, ax=axs[0], format="%.2f")
 plt.colorbar(cs,format="%.2f",orientation='horizontal')
@@ -78,7 +92,7 @@ plt.ylabel(r'y')
 ax.set_aspect('equal')
 if not('myplot' in os.listdir('./')):
     os.mkdir('myplot')
-fig.savefig('./myplot/contour_c_'+filename+'.png',bbox_inches='tight',dpi=200)
+fig.savefig('./myplot/contour_errorC_'+filename+'.png',bbox_inches='tight',dpi=200)
 
 #cs = axs[1].contourf(X, Y, zdata, levels=[-1,0,1])
 #fig.colorbar(cs, ax=axs[1])

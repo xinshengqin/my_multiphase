@@ -1,0 +1,251 @@
+\documentclass[11pt]{article}
+
+\usepackage{graphicx}
+\usepackage{amsmath,amsfonts,amssymb}
+
+%\usepackage{hyperref}  % for urls and hyperlinks
+\usepackage[hidelinks]{hyperref}
+%\usepackage[pdftex]{graphicx} 
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{bm} %for display vectors as bold and italic in equation
+%\usepackage{enumitem}
+
+%for flow chart
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows}
+
+
+\setlength{\textwidth}{6.2in}
+\setlength{\oddsidemargin}{0.3in}
+\setlength{\evensidemargin}{0in}
+\setlength{\textheight}{8.7in}
+\setlength{\voffset}{-.7in}
+\setlength{\headsep}{26pt}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt}
+
+%setting code style
+    \usepackage{listings}
+    %\usepackage[T1]{fontenc}%This makes me able to copy the underscore in code block
+    %\usepackage{listingsutf8}
+    \usepackage{color}
+
+    \definecolor{mygreen}{rgb}{0,0.6,0}
+    \definecolor{mygray}{rgb}{0.5,0.5,0.5}
+    \definecolor{mymauve}{rgb}{0.58,0,0.82}
+    \definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+    \lstset{ %
+    backgroundcolor=\color{backcolour},   % choose the background color; you must add \usepackage{color} or \usepackage{xcolor}
+    basicstyle=\footnotesize,        % the size of the fonts that are used for the code
+    breakatwhitespace=false,         % sets if automatic breaks should only happen at whitespace
+    breaklines=true,                 % sets automatic line breaking
+    captionpos=b,                    % sets the caption-position to bottom
+    commentstyle=\color{mygreen},    % comment style
+    deletekeywords={...},            % if you want to delete keywords from the given language
+    escapeinside={\%*}{*)},          % if you want to add LaTeX within your code
+    extendedchars=true,              % lets you use non-ASCII characters; for 8-bits encodings only, does not work with UTF-8
+    frame=single,                    % adds a frame around the code
+    keepspaces=true,                 % keeps spaces in text, useful for keeping indentation of code (possibly needs columns=flexible)
+    keywordstyle=\color{blue},       % keyword style
+    language=Python,                 % the language of the code
+    morekeywords={*,...},            % if you want to add more keywords to the set
+    numbers=left,                    % where to put the line-numbers; possible values are (none, left, right)
+    numbersep=5pt,                   % how far the line-numbers are from the code
+    numberstyle=\tiny\color{mygray}, % the style that is used for the line-numbers
+    rulecolor=\color{black},         % if not set, the frame-color may be changed on line-breaks within not-black text (e.g. comments (green here))
+    showspaces=false,                % show spaces everywhere adding particular underscores; it overrides 'showstringspaces'
+    showstringspaces=false,          % underline spaces within strings only
+    showtabs=false,                  % show tabs within strings adding particular underscores
+    stepnumber=2,                    % the step between two line-numbers. If it's 1, each line will be numbered
+    stringstyle=\color{mymauve},     % string literal style
+    tabsize=2,                       % sets default tabsize to 2 spaces
+    title=\lstname                   % show the filename of files included with \lstinputlisting; also try caption instead of title
+    }
+
+\begin{document}
+
+\title{AA544 HW3 - Multiphase Flow on Cartesian-grids}
+
+\author{Xinsheng Qin xsqin@uw.edu}
+\date{\today} %this tells LaTeX to use today's date
+
+
+\maketitle
+
+%\begin{abstract}
+%\end{abstract}
+%\newpage
+
+%\tableofcontents
+\newpage
+\section{Governing Equations}
+One-fluid version of NS equation for incompressible newtonian flows with sharp interface:
+\begin{equation}
+    \rho\frac{\partial \bm{u}}{\partial t} + \rho \nabla \cdot (\bm{uu}) = - \nabla p + \bm{f} + \mu \nabla^2 \bm{u}  + \bm{f_\sigma}\delta _s
+    \label{}
+\end{equation}
+where $\delta _s = \delta (\bm{x}-\bm{x_s}), \rho = \rho(\bm{x},t), \mu = \mu(\bm{x},t)$.
+\par
+Note that $\rho$ and $\mu$ are functions of space and time now.
+
+Definition of marker function H:
+\begin{equation}
+        H(\bm{x}) =
+         \begin{cases}
+             1, &\bm{x} \in fluid \ 1\\
+             0, &\bm{x} \in fluid \ 2
+         \end{cases}
+    \label{}
+\end{equation}
+
+The advection function for $H$ is:
+\begin{equation}
+    \frac{\partial H}{\partial t} + \bm{u} \cdot \nabla H = 0
+    \label{eq:transport_H}
+\end{equation}
+
+In incompressible fluid, this can be written as:
+\begin{equation}
+    \frac{\partial H}{\partial t} + \nabla \cdot (\bm{u}H) = 0
+    \label{}
+\end{equation}
+
+\section{Numerical Algorithm}
+Rewrite one-fluid version of NS eqaution here.
+\begin{equation}
+\rho\frac{\partial \bm{u}}{\partial t} + \rho \underbrace{ \nabla \cdot (\bm{uu})}_{A} = - \nabla p +  \underbrace{\nabla \cdot \left[\mu \left( \nabla \bm{u} + \left( \nabla \bm{u} \right)^T \right) \right] }_{D} + \underbrace{\bm{f}  + \bm{f_\sigma}\delta _s}_{f}
+    \label{}
+\end{equation}
+
+Use 1st order explicit time derivative:
+\begin{equation}
+    \frac{\bm{u}^{n+1}-\bm{u}^{n}}{\Delta t} + A^{n} = \frac{1}{\rho} (-\nabla p + D^{n} + f^{n})
+    \label{}
+\end{equation}
+
+For 1st step in projection method, we can compute $u^{*}$ by:
+\begin{equation}
+    u^{*}_{i+1/2,j} = u^{n}_{i+1/2,j} + \Delta t \Big\{ (-A_{x})^{n}_{i+1/2,j} + (f_{bx})^{n}_{i+1/2,j} + \frac{1}{\frac{1}{2}(\rho ^{n}_{i+1/2,j}+\rho ^{n}_{i,j})} \Big[ (D_x)^{n}_{i+1/2,j} + (f_{\sigma x)^{n}_{i+1/2,j}} \Big] \Big\}
+    \label{}
+\end{equation}
+
+$v^{*}$ can be computed in the same way.
+
+From definition we know:
+\begin{equation}
+    D = \nabla \cdot \bm{T}
+    \label{}
+\end{equation}
+where $T = \mu [ \nabla \bm{u} +(\nabla \bm{u})^T]$.
+
+Thus
+\begin{equation}
+    (D_x)^{n}_{i+1/2,j} = \frac{T^{xx}_{i+1,j}-T^{xx}_{i,j}}{\Delta x} + \frac{T^{xy}_{i+1/2,j+1/2}-T^{xy}_{i+1/2,j-1/2}}{\Delta y}
+    \label{}
+\end{equation}
+
+$D_y$ can be computed in the same way.
+
+The stress tensor $T$ above  should be computed by:
+\begin{equation}
+    T^{xx}_{i,j} =  2 \mu ^{n}_{i,j} \frac{u^{n}_{i+1/2,j}- u^{n}_{i-1/2,j}}{\Delta x}
+    \label{}
+\end{equation}
+
+\begin{equation}
+    T^{xy}_{i+1/2,j+1/2} = \mu ^{n}_{i+1/2,j+1/2} (\frac{u^{n}_{i+1/2,j+1}-u^{n}_{i+1/2,j}}{\Delta y} + \frac{v^{n}_{i+1,j+1/2}-v^{n}_{i,j+1/2}}{\Delta x})
+    \label{}
+\end{equation}
+
+\section{Reconstruction and Advection of surface}
+
+\begin{equation}
+    C_{i,j} = \frac{1}{\Delta x \Delta y} \int_{V}^{} H(x,y) dx dy
+    \label{}
+\end{equation}
+
+If we integrate equation \ref{eq:transport_H} over a cell volume, with the definition of $C$ above, we get:
+\begin{equation}
+    \frac{\partial C}{\partial t} + \frac{\partial F_x}{\partial x} +\frac{\partial F_y}{\partial y} = 0
+    \label{}
+\end{equation}
+where $F_x = Cu_x, F_y = Cu_y$ are flux of $C$ in x and y direction respectively.
+
+Discretize the transport eqaution of $C$ above to advance $C$ in time:
+\begin{equation}
+    C^{n+1}_{i,j} = C^{n}_{i,j} - \Delta t [\frac{F_{x\ i+1/2,j}^{n} - F_{x \ i-1/2,j}^{n}}{\Delta x} + \frac{F_{y \ i,j+1/2}^{n}-F_{y\ i,j-1/2}^{n}}{\Delta y}]
+    \label{}
+\end{equation}
+
+Now the problem to be solved is how to compute flux of $C$ based on velocity field, $C$ field and geometry information of the surface.
+\par
+To know geometry information of the surface, we need to reconstruct surface from known $C$ field. There are many different methods to do this, in this project, PLIC (piecewise linear interface calculation) is used.
+
+\par
+In this method, free surface is reconstruct with a straight line in each cell. 
+The straight line can be represented by $m_{x} x + m_{y} y =  \alpha$. 
+Thus our goal is to compute $m_{x},m_{y},\alpha$ from $C$ field.
+
+To do this, there are also a bunch of methods. 
+Below I will introduce Young's finite-difference method.
+
+
+Note that $\bm{m} = (m_x,m_y)$ represents normal of the surface. Thus it's natural to take:
+\begin{equation}
+    \bm{m} = - \nabla C  = - ( \frac{\partial C}{\partial x}, \frac{\partial C}{\partial y})
+    \label{}
+\end{equation}
+
+Thus 
+\begin{align}
+        &m_x = -\frac{\partial C}{\partial x} \\
+        &m_y = -\frac{\partial C}{\partial y}
+\end{align}
+
+Then we firstly compute $m_x$ at corner of pressure control volumn:
+\begin{align}
+    m_{x\ i+1/2,j+1/2} &= - \frac{\partial C}{\partial x}|_{i+1/2,j+1/2}\\
+    & = - \frac{1}{2} ( \frac{\partial C}{\partial x}|_{i+1/2,j+1} +\frac{\partial C}{\partial x}|_{i+1/2,j}) \\
+    & = - \frac{1}{2 \Delta x} ( C_{i+1,j+1} -C_{i,j+1} + C_{i+1,j} - C_{i,j} )  
+    \label{}
+\end{align}
+
+Then $m_x$ at center of a pressure control volumn is computed by averaging $m_x$ at four corners of this volumn:
+\begin{equation}
+    m_{x\ i,j} = \frac{1}{4} (m_{x\ i+1/2,j+1/2} +m_{x\ i+1/2,j-1/2} +m_{x\ i-1/2,j+1/2} +m_{x\ i-1/2,j-1/2}) 
+    \label{}
+\end{equation}
+
+
+$m_y$ is computed in the same way.
+
+Once we get $m_x, m_y$, we can proceed to compute $\alpha$.
+
+(insert a figure of how to compute area in a cell here)
+
+Area of the shade area is:
+\begin{equation}
+    A = \frac{1}{2m_x m_y}[\alpha ^{2} - F(\alpha - m_x \Delta x) - F(\alpha - m_y \Delta y)]
+    \label{}
+\end{equation}
+where 
+\begin{equation}
+    F(z) = 
+    \begin{cases}
+        z^2, &z>0\\
+        0, &otherwise
+    \end{cases}
+    \label{}
+\end{equation}
+
+With this function , we can get a unique $\alpha$ such that $\frac{A}{\Delta x \Delta y} = C$.
+
+Now the surface is reconstructed in cach cell. To compute the flux of $C$, we simply evaluate the area of fluid 1 in a rectangle upwind  the cell surface.
+
+
+
+
+\newpage
+\end{document}

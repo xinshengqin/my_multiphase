@@ -1,0 +1,24 @@
+This is my implementation of VOF method using PYTHON.
+Although PTYHON is much slower than compiled languange like C++ and Java, it is much easier to be implemented and can be a better demonstration of the algorithm.
+A multiphase solver should include at least 2 parts:
+    1) solving one-fluid version of the N-S equation (need to handle space-varing density and viscosity):
+        An single-phase solver with k-epsilon turbulence model has been built and validated using flow-over-flat-plate problem. It's rewritting in PYTHON and inplementation of space-varing density and viscosity is on the way.
+    2) Reconstruction and Advection of the interface (using PLIC method).
+        This part is implemented in current PYTHON code and validated by forcing a circular interface to move along prescribed track and come back to its original position, and then computing error by comparing overlapping area. Tryggvason's result in his book (Direct Numerical Simulations of Gas-Liquid Multiphase Flows) was used to compare.
+        Reconstruction of interface: Young's method.
+        Advection of interface: Use a operator splitting method.
+
+
+To run the code for 2) part:
+1) Copy translation_test.py and compute_error_c.py from ./translation_test_40by40 to current directory:
+
+    cp ./translation_test_40by40/*.py ./
+
+2) run translation_test.py (This will generate snapshot of the interface at some intermediate simulation time in ./myplot/) :
+
+    python translation_test.py
+
+3) compute the error:
+
+    python compute_error_c.py
+        
